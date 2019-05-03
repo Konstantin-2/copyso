@@ -1,0 +1,67 @@
+msgid " not found. Please, append required directory to /etc/ld.so.conf"
+msgstr ""
+
+msgid " skipped, file type unknown"
+msgstr ""
+
+msgid "Can not create directory "
+msgstr ""
+
+msgid "Can not create symbolic link "
+msgstr ""
+
+msgid "Can't copy "
+msgstr ""
+
+msgid "Can't create directory "
+msgstr ""
+
+msgid "Can't make hard link for file "
+msgstr ""
+
+msgid "Can't open file "
+msgstr ""
+
+#, c-format
+msgid "Can't run %s"
+msgstr ""
+
+msgid "Deep recursion in ld.so.conf"
+msgstr ""
+
+msgid "Error read "
+msgstr ""
+
+msgid "Files to copy are not specified"
+msgstr ""
+
+msgid "Read error "
+msgstr ""
+
+#, c-format
+msgid "Unrecognized option %s"
+msgstr ""
+
+msgid ""
+"Usage: copyso [OPTION] <source> ... <dest>\n"
+"Copy executable files and its' dependencies to <dest> directory\n"
+"The program is useful when creating Live CD\n"
+"\n"
+"Options:\n"
+"  -r, --root=FROM  root directory to search files\n"
+"  -l, --link       try to make hard links instead of copy files\n"
+"  -v, --verbose    explain what is being done\n"
+"      --help       display this help and exit\n"
+"      --version    output version information and exit\n"
+"Report bugs to: oks-mgn@mail.ru\n"
+"copyko home page: <NOT YET, TODO>\n"
+"General help using GNU software: <https://www.gnu.org/gethelp/>\n"
+msgstr ""
+
+msgid ""
+"copyso 0.1\n"
+"Copyright (C) 2019 Oshepkov Kosntantin\n"
+"License GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>\n"
+"This is free software: you are free to change and redistribute it.\n"
+"There is NO WARRANTY, to the extent permitted by law.\n"
+msgstr ""
