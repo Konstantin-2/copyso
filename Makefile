@@ -12,7 +12,7 @@ OBJECTS = $(EXECUTABLE).o
 
 .PHONY : all clean i18n install uninstall
 
-#all : $(EXECUTABLE) ru/LC_MESSAGES/$(EXECUTABLE).mo
+all : $(EXECUTABLE) ru/LC_MESSAGES/$(EXECUTABLE).mo
 
 $(EXECUTABLE) : $(OBJECTS)
 	@echo 'LINK $@'
