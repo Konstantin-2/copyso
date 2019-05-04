@@ -16,7 +16,6 @@
 #include <glob.h>
 #include <error.h>
 #define _(STRING) gettext(STRING)
-#define DATAROOTDIR "/usr/local/share"
 
 using namespace std;
 namespace fs = std::filesystem;
@@ -72,6 +71,24 @@ static bool inbegin_shift(string_view& str, string_view substr)
 	if (memcmp(str.data(), substr.data(), substr.size())) return false;
 	str.remove_prefix(substr.size());
 	return true;
+}
+
+fs::path mk_rel(string_view path)
+{
+	if(!path.empty() && path[0] == '/')
+		path.remove_prefix(1);
+	return path;
+}
+
+string alt_rel(const fs::path& path, const fs::path& dir)
+{
+	string path_s = path;
+	string dir_s = dir;
+	string_view res = path_s;
+	if (!inbegin_shift(res, dir_s)) return string();
+	if(!res.empty() && res[0] == '/')
+		res.remove_prefix(1);
+	return string(res);
 }
 
 /* Read file "filename" with format like ld.so.conf,
@@ -134,6 +151,7 @@ static vector<string_view> parse_args(int argc, char ** argv)
 {
 	vector<string_view> res;
 	int c;
+	char * srcdir_s = 0;
 	static const struct option longOpts[] = {
 		{"root", required_argument, 0, 'r'},
 		{"verbose", no_argument, 0, 'v'},
@@ -153,7 +171,7 @@ static vector<string_view> parse_args(int argc, char ** argv)
 			verbose = true;
 			break;
 		case 'r':
-			srcdir = optarg;
+			srcdir_s = optarg;
 			break;
 		case 0:
 			if (!strcmp(optarg, "--help"))
@@ -170,8 +188,12 @@ static vector<string_view> parse_args(int argc, char ** argv)
 		cout << _("Files to copy are not specified") << '\n';
 		exit(0);
 	}
+	srcdir = srcdir_s ? srcdir_s : "/";
 	dstdir = res.back();
 	res.pop_back();
+	if (verbose)
+		cout << _("Source directory: ") << srcdir << '\n'
+			<< _("Destination directory: ") << dstdir << '\n';
 	return res;
 }
 
@@ -183,7 +205,7 @@ string find_so(string_view name)
 			string res(s);
 			res += '/';
 			res += name;
-			return s;
+			return res;
 		}
 	return string();
 }
@@ -243,7 +265,6 @@ static void copy_bin_deps(fs::path abs_path)
 	istream is(&buf);
 	string line;
 	vector<string> res;
-	bool depends_found = false;
 	while(getline(is, line)) {
 		string_view so_name(line);
 		if (!inbegin_shift(so_name, "  NEEDED ")) continue;
@@ -263,6 +284,7 @@ static void copy_bin_deps(fs::path abs_path)
 static void copy_item(fs::path rel)
 {
 	error_code ec;
+	cout << "Copy item " << rel << '\n';
 	fs::path src = srcdir / rel;
 	while (fs::is_symlink(src)) {
 		fs::path dst = dstdir / rel;
@@ -288,7 +310,12 @@ static void copy_item(fs::path rel)
 			return;
 		}
 		src = src.parent_path() / t;
-		rel = fs::relative(src, srcdir);
+		string s = alt_rel(src, srcdir);
+		if (s.empty()) {
+			copy_absurl(src, dst);
+			return;
+		}
+		rel = s;
 	}
 
 	if (fs::is_regular_file(src)) {
@@ -323,8 +350,10 @@ static void copy_absurl(fs::path src, fs::path dst)
 
 static void copy_dir(string_view dir)
 {
-	for(auto& p: fs::directory_iterator(dir))
-		copy_item(p.path());
+	for(auto& p: fs::directory_iterator(dir)) {
+		string path = p.path();
+		copy_item(mk_rel(path));
+	}
 }
 
 void copy_param(string_view item)
@@ -333,7 +362,7 @@ void copy_param(string_view item)
 	if (fs::is_directory(item))
 		copy_dir(item);
 	else if (fs::is_regular_file(item) || fs::is_symlink(item))
-		copy_item(item);
+		copy_item(mk_rel(item));
 	else
 		cout << item << _(" skipped, file type unknown") << '\n';
 }
@@ -342,8 +371,8 @@ int main(int argc, char ** argv)
 {
 	assert(sizeof(unsigned) == 4);
 	setlocale(LC_ALL, "");
-	bindtextdomain("copyelf", DATAROOTDIR "/locale");
-	textdomain("copyelf");
+	bindtextdomain("copyso", DATAROOTDIR "/locale");
+	textdomain("copyso");
 	vector<string_view> args = parse_args(argc, argv);
 	get_so_directories();
 	for (string_view& i : args)

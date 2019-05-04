@@ -29,6 +29,9 @@ msgstr ""
 msgid "Deep recursion in ld.so.conf"
 msgstr ""
 
+msgid "Destination directory: "
+msgstr ""
+
 msgid "Error read "
 msgstr ""
 
@@ -36,6 +39,9 @@ msgid "Files to copy are not specified"
 msgstr ""
 
 msgid "Read error "
+msgstr ""
+
+msgid "Source directory: "
 msgstr ""
 
 #, c-format

@@ -20,7 +20,7 @@ $(EXECUTABLE) : $(OBJECTS)
 
 %.o : $(srcdir)/%.cpp
 	@echo 'CPP  $@'
-	@$(CXX) $(CXXFLAGS) -c $<
+	@$(CXX) $(CXXFLAGSD) -c $<
 
 $(EXECUTABLE).pot : $(EXECUTABLE).cpp
 	@echo 'POT  $@'

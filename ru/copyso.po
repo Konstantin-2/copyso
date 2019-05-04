@@ -49,6 +49,9 @@ msgstr "Не могу запустить %s"
 msgid "Deep recursion in ld.so.conf"
 msgstr "Длинная рекурсия в ld.so.conf"
 
+msgid "Destination directory: "
+msgstr "Целевой каталог "
+
 msgid "Error read "
 msgstr "Ошибка чтения "
 
@@ -57,6 +60,9 @@ msgstr "Не указаны файлы для копирования"
 
 msgid "Read error "
 msgstr "Ошибка чтения "
+
+msgid "Source directory: "
+msgstr "Исходный каталог: "
 
 #, c-format
 msgid "Unrecognized option %s"
