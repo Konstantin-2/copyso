@@ -7,6 +7,7 @@
 #include <cstring>
 #include <cassert>
 #include <cerrno>
+#include <cstdlib>
 #include <ext/stdio_filebuf.h>
 #include <unistd.h>
 #include <fcntl.h>
@@ -22,13 +23,17 @@ namespace fs = std::filesystem;
 
 fs::path srcdir; // Source root directory
 fs::path dstdir; // Destination root directory
+fs::path srclib; // Root directory to search ld.conf.so and so-files
+fs::path dstlib; // If defined, all so-files will be copied into same one this directory
+bool has_dstlib = false;
 vector<string> so_path; // Directories relative to srcdir with so files
 set<string> list_so; // copied so-files (filenames only)
 bool try_link = false; // Should program try to make hard link instead of copy files
 bool verbose = false;
+vector<string_view> paths; // Path to search files (see environment PATH)
 
 static void copy_absurl(fs::path src, fs::path dst);
-static void copy_item(fs::path rel);
+static void copy_item(fs::path rel, bool = false);
 
 static constexpr std::string_view operator "" _s (const char* str, const size_t size)
 {
@@ -50,13 +55,16 @@ static void show_help()
 			"Copy executable files and its' dependencies to <dest> directory\n"
 			"The program is useful when creating Live CD\n\n"
 			"Options:\n"
-			"  -r, --root=FROM  root directory to search files\n"
-			"  -l, --link       try to make hard links instead of copy files\n"
-			"  -v, --verbose    explain what is being done\n"
-			"      --help       display this help and exit\n"
-			"      --version    output version information and exit\n"
+			"  -r, --root=FROM   root directory to search files\n"
+			"      --srclib=FROM root directory to search so-files\n"
+			"      --dstlib=TO   subdirectory in <dest> to store so-files\n"
+			"  -l, --link        try to make hard links instead of copy files\n"
+			"  -p, --path        use environment PATH to search files in root\n"
+			"  -v, --verbose     explain what is being done\n"
+			"      --help        display this help and exit\n"
+			"      --version     output version information and exit\n"
 			"Report bugs to: oks-mgn@mail.ru\n"
-			"copyko home page: <NOT YET, TODO>\n"
+			"copyso home page: https://github.com/Konstantin-2/copyso.git\n"
 			"General help using GNU software: <https://www.gnu.org/gethelp/>\n");
 	exit(0);
 }
@@ -73,19 +81,14 @@ static bool inbegin_shift(string_view& str, string_view substr)
 	return true;
 }
 
-fs::path mk_rel(string_view path)
-{
-	if(!path.empty() && path[0] == '/')
-		path.remove_prefix(1);
-	return path;
-}
-
-string alt_rel(const fs::path& path, const fs::path& dir)
+// As std::filesystem::relative, but preserves symlinks, does not resolve them
+static string alt_relative(const fs::path& path, const fs::path& dir)
 {
 	string path_s = path;
 	string dir_s = dir;
 	string_view res = path_s;
-	if (!inbegin_shift(res, dir_s)) return string();
+	if (!inbegin_shift(res, dir_s))
+		return string();
 	if(!res.empty() && res[0] == '/')
 		res.remove_prefix(1);
 	return string(res);
@@ -118,7 +121,7 @@ static void get_src_content(set<string>& res, const string& filename, int reqlev
 		if (sub[0] == '/') {
 			while (!sub.empty() && sub[0] == '/') sub.remove_prefix(1);
 			while (!sub.empty() && sub.back() == '/') sub.remove_suffix(1);
-			if (fs::is_directory(srcdir / sub))
+			if (fs::is_directory(srclib / sub))
 				res.emplace(sub);
 			continue;
 		}
@@ -130,7 +133,7 @@ static void get_src_content(set<string>& res, const string& filename, int reqlev
 
 		// glob is used in kmod source
 		glob_t glo;
-		string npath = srcdir / sub;
+		string npath = srclib / sub;
 		glob(npath.c_str(), GLOB_NOSORT, 0, &glo);
 		for(size_t i = 0; i < glo.gl_pathc; i++)
 			get_src_content(res, glo.gl_pathv[i], reqlev + 1);
@@ -141,10 +144,30 @@ static void get_src_content(set<string>& res, const string& filename, int reqlev
 static void get_so_directories()
 {
 	set<string> tmp;
-	get_src_content(tmp, srcdir / "etc/ld.so.conf");
+	get_src_content(tmp, srclib / "etc/ld.so.conf");
 	so_path.reserve(tmp.size());
 	while (!tmp.empty())
 		so_path.emplace_back(move(tmp.extract(tmp.begin()).value()));
+}
+
+// Split string (PATH) by columns: "/bin:/sbin:..." => {"/bin", "/sbin", ...}
+static vector<string_view> split_path(string_view strv)
+{
+	vector<string_view> output;
+	size_t first = 0;
+	while (first < strv.size())
+	{
+		const auto second = strv.find_first_of(':', first);
+		if (first != second) {
+			if (strv[first] == '/')
+				first++;
+			output.emplace_back(strv.substr(first, second-first));
+		}
+		if (second == string_view::npos)
+			break;
+		first = second + 1;
+	}
+	return output;
 }
 
 static vector<string_view> parse_args(int argc, char ** argv)
@@ -152,17 +175,23 @@ static vector<string_view> parse_args(int argc, char ** argv)
 	vector<string_view> res;
 	int c;
 	char * srcdir_s = 0;
+	char * srclib_s = 0;
+	char * dstlib_s = 0;
+	bool use_path = false;
 	static const struct option longOpts[] = {
 		{"root", required_argument, 0, 'r'},
 		{"verbose", no_argument, 0, 'v'},
 		{"link", no_argument, 0, 'l'},
+		{"path", no_argument, 0, 'p'},
+		{"srclib", required_argument, 0, 2},
+		{"dstlib", required_argument, 0, 3},
 		{"help", no_argument, 0, 0},
 		{"version", no_argument, 0, 0},
 		{0, no_argument, 0, 0}
 	};
 	int longIndex = 0;
 
-	while ((c = getopt_long(argc, argv, "-lvr:", longOpts, &longIndex)) != -1) {
+	while ((c = getopt_long(argc, argv, "-plvr:", longOpts, &longIndex)) != -1) {
 		switch (c) {
 		case 'l':
 			try_link = true;
@@ -170,8 +199,17 @@ static vector<string_view> parse_args(int argc, char ** argv)
 		case 'v':
 			verbose = true;
 			break;
+		case 'p':
+			use_path = true;
+			break;
 		case 'r':
 			srcdir_s = optarg;
+			break;
+		case 2:
+			srclib_s = optarg;
+			break;
+		case 3:
+			dstlib_s = optarg;
 			break;
 		case 0:
 			if (!strcmp(optarg, "--help"))
@@ -190,18 +228,37 @@ static vector<string_view> parse_args(int argc, char ** argv)
 	}
 	srcdir = srcdir_s ? srcdir_s : "/";
 	dstdir = res.back();
+	srclib = srclib_s ? srclib_s : srcdir;
+	if (dstlib_s) dstlib = dstlib_s, has_dstlib = true;
 	res.pop_back();
 	if (verbose)
 		cout << _("Source directory: ") << srcdir << '\n'
 			<< _("Destination directory: ") << dstdir << '\n';
+
+	if (use_path) {
+		char * env = getenv("PATH");
+		paths = split_path(env);
+	}
+	if (paths.empty())
+		paths.emplace_back();
 	return res;
+}
+
+fs::path mksrc(fs::path rel, bool so)
+{
+	return so ? srclib / rel : srcdir / rel;
+}
+
+fs::path mkdst(fs::path rel, bool so)
+{
+	return so && has_dstlib ? dstdir / dstlib / rel.filename() : dstdir / rel;
 }
 
 // Return relative path (relative to srcdir)
 string find_so(string_view name)
 {
 	for (const string& s : so_path)
-		if (fs::exists(srcdir / s / name)) {
+		if (fs::exists(srclib / s / name)) {
 			string res(s);
 			res += '/';
 			res += name;
@@ -275,55 +332,10 @@ static void copy_bin_deps(fs::path abs_path)
 		if(!list_so.insert(so_name_str).second) continue;
 		string so_fullname = find_so(so_name);
 		if (!so_fullname.empty())
-			copy_item(so_fullname);
+			copy_item(so_fullname, true);
 		else
 			cout << so_name << _(" not found. Please, append required directory to /etc/ld.so.conf") << '\n';
 	}
-}
-
-static void copy_item(fs::path rel)
-{
-	error_code ec;
-	cout << "Copy item " << rel << '\n';
-	fs::path src = srcdir / rel;
-	while (fs::is_symlink(src)) {
-		fs::path dst = dstdir / rel;
-		if (verbose)
-			cout << src << " => " << dst << '\n';
-
-		fs::create_directories(dst.parent_path(), ec);
-		if (ec && ec != errc::file_exists) {
-			cerr << _("Can not create directory ") << dst.parent_path() << '\n';
-			return;
-		}
-		fs::copy_symlink(src, dst, ec);
-		if (ec && ec != errc::file_exists) {
-			cerr << _("Can not create symbolic link ") << src << " =>" << dst << '\n';
-			return;
-		}
-
-		string t = fs::read_symlink(src);
-		if (t.empty())
-			cerr << _("Read error ") << src << '\n';
-		else if (t[0] == '/') {
-			copy_absurl(t, dst);
-			return;
-		}
-		src = src.parent_path() / t;
-		string s = alt_rel(src, srcdir);
-		if (s.empty()) {
-			copy_absurl(src, dst);
-			return;
-		}
-		rel = s;
-	}
-
-	if (fs::is_regular_file(src)) {
-		copy_regular_file(src, dstdir / rel);
-		if (is_executable(src))
-			copy_bin_deps(src);
-	} else
-		cout << src << _(" skipped, file type unknown") << '\n';
 }
 
 /* Copy if src is symlink to absolute path \
@@ -348,23 +360,83 @@ static void copy_absurl(fs::path src, fs::path dst)
 		cout << src << _(" skipped, file type unknown") << '\n';
 }
 
-static void copy_dir(string_view dir)
+static void copy_item(fs::path rel, bool so)
 {
-	for(auto& p: fs::directory_iterator(dir)) {
-		string path = p.path();
-		copy_item(mk_rel(path));
+	error_code ec;
+	if (verbose)
+		cout << _("Copy ") << rel << '\n';
+	fs::path src = mksrc(rel, so);
+	while (fs::is_symlink(src)) {
+		fs::path dst = mkdst(rel, so);
+		if (verbose)
+			cout << src << " => " << dst << '\n';
+
+		fs::create_directories(dst.parent_path(), ec);
+		if (ec && ec != errc::file_exists) {
+			cerr << _("Can not create directory ") << dst.parent_path() << '\n';
+			return;
+		}
+
+		string t = fs::read_symlink(src);
+		if (t.empty()) {
+			cerr << _("Read error ") << src << '\n';
+			return;
+		} else if (t[0] == '/') {
+			copy_absurl(t, dst);
+			return;
+		}
+		fs::copy_symlink(src, dst, ec);
+		if (ec && ec != errc::file_exists) {
+			cerr << _("Can not create symbolic link ") << src << " =>" << dst << '\n';
+			return;
+		}
+
+
+		src = src.parent_path() / t;
+		string s = alt_relative(src, so ? srclib : srcdir);
+		if (s.empty()) {
+			copy_absurl(src, dst);
+			return;
+		}
+		rel = s;
+	}
+
+	if (fs::is_regular_file(src)) {
+		copy_regular_file(src, mkdst(rel, so));
+		if (is_executable(src))
+			copy_bin_deps(src);
+	} else if (fs::is_directory(src))
+		cout << _("Skipped directory ") << src << '\n';
+	else
+		cout << src << _(" skipped, file type unknown") << '\n';
+}
+
+static void copy_dir(fs::path src)
+{
+	for(auto& p: fs::directory_iterator(src)) {
+		fs::path path = alt_relative(p, srcdir);
+		copy_item(path);
 	}
 }
 
 void copy_param(string_view item)
 {
 	if (item.empty()) return;
-	if (fs::is_directory(item))
-		copy_dir(item);
-	else if (fs::is_regular_file(item) || fs::is_symlink(item))
-		copy_item(mk_rel(item));
-	else
-		cout << item << _(" skipped, file type unknown") << '\n';
+	if (item[0] == '/')
+		item.remove_prefix(1);
+	fs::path src = srcdir / item;
+	if (fs::is_directory(src)) {
+		copy_dir(src);
+		return;
+	}
+	for (const string_view& p : paths) {
+		fs::path src = srcdir / p / item;
+		if (fs::is_regular_file(src) || fs::is_symlink(src)) {
+			copy_item(fs::path(p) / item);
+			return;
+		}
+	}
+	cout << src << _(" skipped, file not found") << '\n';
 }
 
 int main(int argc, char ** argv)

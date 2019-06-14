@@ -28,10 +28,21 @@ Mandatory arguments to long options are mandatory for short options too.
 directory to search files, for example alt_arch/x86.
 Default value is root directory.
 .TP
+   \fB--srclib\fR=\fIFROM\fR
+directory to search so-files and ld.so.conf.
+Default value is \fB--root\fR directory.
+.TP
+   \fB--dstlib\fR=\fITO\fR
+subdirectory in destination directory to store so-files.
+Default is to copy theeir relative locations.
+.TP
 \fB\-l\fR, \fB--link\fR
 try to make hard links instead of copy files.
 It can speedup copying and save space on hard drive.
 On error only first error message is printed.
+.TP
+\fB\-p\fR, \fB--path\fR
+use PATH environment variable to search binary files in root directory.
 .TP
 \fB\-v\fR, \fB--verbose\fR
 explain what is being done.
@@ -44,8 +55,36 @@ display help and exit.
 .TP
 \fB--version\fR
 output version information and exit.
-.SH EXAMPLE
-copyso --root=/bin sh mkdir mount cat cut my_livecd/bin
+.SH EXAMPLES
+.TP
+copyso /bin/sh my_livecd
+will copy /bin/sh to ./my_livecd/bin/sh.
+If /bin/sh is (for example) a symlink to /bin/bash, /bin/bash will be copied too.
+It will also copy required so-files: /lib64/libc.so.6 to ./my_livecd/lib64/libc.so.6 and so on.
+.TP
+copyso -l /bin/sh my_livecd
+Instead of copying, it will make hard links.
+.TP
+copyso -p sh bc my_livecd
+It will read your PATH environment variable.
+Find that "sh" is located at /bin/sh, copy /bin/sh to ./my_livecd/bin/sh.
+If "bc" is located at /usr/bin/bc, copy it to ./my_livecd/usr/bin/bc.
+Then see first example.
+.TP
+copyso /bin my_livecd
+copy every file from "bin" (only this directory, not subdirectories) to ./my_livecd/bin/.
+Then, for example, if /bin/awk is a symlink to /usr/bin/gawk, /usr/bin/gawk will be copied too.
+Required so-files will be copied too.
+.TP
+copyso --dstlib=lib /bin my_livecd
+As previous example, but every so-file will be copied into ./my_livecd/lib, not other directories.
+.TP
+copyso --root=/my_src bin sbin my_livecd
+will copy files from /my_src/bin to ./my_livecd/bin and /my_src/sbin to ./my_livecd/sbin
+.TP
+copyso --root=/my_src --srclib=/ bin my_livecd
+will copy files from /my_src/bin to ./my_livecd/bin, but so-files will be copied from /lib, /usr/lib, ... to ./my_livecd/lib, ./my_livecd/usr/lib, ...
+List of directories with so-files will be read from /etc/ld.so.conf.
 .SH SEE ALSO
 objdump(1)
 .SH BUGS

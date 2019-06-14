@@ -1,6 +1,9 @@
 msgid " not found. Please, append required directory to /etc/ld.so.conf"
 msgstr ""
 
+msgid " skipped, file not found"
+msgstr ""
+
 msgid " skipped, file type unknown"
 msgstr ""
 
@@ -26,6 +29,9 @@ msgstr ""
 msgid "Can't run %s"
 msgstr ""
 
+msgid "Copy "
+msgstr ""
+
 msgid "Deep recursion in ld.so.conf"
 msgstr ""
 
@@ -41,6 +47,9 @@ msgstr ""
 msgid "Read error "
 msgstr ""
 
+msgid "Skipped directory "
+msgstr ""
+
 msgid "Source directory: "
 msgstr ""
 
@@ -54,13 +63,16 @@ msgid ""
 "The program is useful when creating Live CD\n"
 "\n"
 "Options:\n"
-"  -r, --root=FROM  root directory to search files\n"
-"  -l, --link       try to make hard links instead of copy files\n"
-"  -v, --verbose    explain what is being done\n"
-"      --help       display this help and exit\n"
-"      --version    output version information and exit\n"
+"  -r, --root=FROM   root directory to search files\n"
+"      --srclib=FROM root directory to search so-files\n"
+"      --dstlib=TO   subdirectory in <dest> to store so-files\n"
+"  -l, --link        try to make hard links instead of copy files\n"
+"  -p, --path        use environment PATH to search files in root\n"
+"  -v, --verbose     explain what is being done\n"
+"      --help        display this help and exit\n"
+"      --version     output version information and exit\n"
 "Report bugs to: oks-mgn@mail.ru\n"
-"copyko home page: <NOT YET, TODO>\n"
+"copyso home page: https://github.com/Konstantin-2/copyso.git\n"
 "General help using GNU software: <https://www.gnu.org/gethelp/>\n"
 msgstr ""
 

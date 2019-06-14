@@ -46,10 +46,10 @@ install ::
 	cp -r ru/LC_MESSAGES $(datarootdir)/locale/ru
 	mkdir -p $(datarootdir)/man/man1
 	cp $(EXECUTABLE).1 $(datarootdir)/man/man1
-	gzip $(datarootdir)/man/man1/$(EXECUTABLE).1
+	gzip -f $(datarootdir)/man/man1/$(EXECUTABLE).1
 	mkdir -p $(datarootdir)/man/ru/man1
 	cp ru/$(EXECUTABLE).1 $(datarootdir)/man/ru/man1
-	gzip $(datarootdir)/man/ru/man1/$(EXECUTABLE).1
+	gzip -f $(datarootdir)/man/ru/man1/$(EXECUTABLE).1
 
 uninstall :
 	$(RM) $(bindir)/$(EXECUTABLE) $(datarootdir)/locale/ru/LC_MESSAGES/$(EXECUTABLE).mo $(datarootdir)/man/man1/$(EXECUTABLE).1.gz $(datarootdir)/man/ru/man1/$(EXECUTABLE).1.gz
