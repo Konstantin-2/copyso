@@ -132,8 +132,12 @@ static void get_src_content(set<string>& res, const string& filename, int reqlev
 		if (sub.empty()) continue;
 
 		// glob is used in kmod source
+		string npath;
+		if (sub[0] == '/')
+			npath = srclib / sub;
+		else
+			npath = srclib / "etc/" / sub;
 		glob_t glo;
-		string npath = srclib / sub;
 		glob(npath.c_str(), GLOB_NOSORT, 0, &glo);
 		for(size_t i = 0; i < glo.gl_pathc; i++)
 			get_src_content(res, glo.gl_pathv[i], reqlev + 1);
@@ -148,6 +152,12 @@ static void get_so_directories()
 	so_path.reserve(tmp.size());
 	while (!tmp.empty())
 		so_path.emplace_back(move(tmp.extract(tmp.begin()).value()));
+
+	if (verbose) {
+		cout << _("Directories with so-files:") << '\n';
+		for (const string& s : so_path)
+			cout << s << '\n';
+	}
 }
 
 // Split string (PATH) by columns: "/bin:/sbin:..." => {"/bin", "/sbin", ...}

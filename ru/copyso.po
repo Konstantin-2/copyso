@@ -31,7 +31,7 @@ msgid "Can not create directory "
 msgstr "Не могу создать каталог "
 
 msgid "Can not create symbolic link "
-msgstr "Не могу создать символьную ссылку"
+msgstr "Не могу создать символьную ссылку "
 
 msgid "Can't copy "
 msgstr "Ошибка копирования "
@@ -58,6 +58,9 @@ msgstr "Длинная рекурсия в ld.so.conf"
 msgid "Destination directory: "
 msgstr "Целевой каталог "
 
+msgid "Directories with so-files:"
+msgstr "Каталоги с so-файлами:"
+
 msgid "Error read "
 msgstr "Ошибка чтения "
 
@@ -77,7 +80,6 @@ msgstr "Исходный каталог: "
 msgid "Unrecognized option %s"
 msgstr "Нераспознанная опция %s"
 
-#, fuzzy
 msgid ""
 "Usage: copyso [OPTION] <source> ... <dest>\n"
 "Copy executable files and its' dependencies to <dest> directory\n"
@@ -104,7 +106,8 @@ msgstr ""
 "  -r, --root=откуда   корневой каталог, в котором искать файлы\n"
 "  -l, --link          пытаться делать жесткие ссылки вместо копирования\n"
 "      --srclib=откуда корневой каталог, в котором искать so-файлы\n"
-"      --dstlib=куда   подкаталог в целевом каталоге, в который записывать so-файлы\n"
+"      --dstlib=куда   подкаталог в целевом каталоге, в который записывать so-"
+"файлы\n"
 "  -p, --path          использовать переменную окружения PATH для поиска "
 "копируемых файлов\n"
 "  -v, --verbose       показывать дополнительную информацию\n"

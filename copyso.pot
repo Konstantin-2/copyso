@@ -38,6 +38,9 @@ msgstr ""
 msgid "Destination directory: "
 msgstr ""
 
+msgid "Directories with so-files:"
+msgstr ""
+
 msgid "Error read "
 msgstr ""
 
