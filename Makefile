@@ -1,5 +1,6 @@
 EXECUTABLE = copyso
-prefix ?= /usr/local
+DESTDIR ?= /
+prefix ?= $(DESTDIR)/usr/local
 exec_prefix ?= $(prefix)
 bindir ?= $(exec_prefix)/bin
 datarootdir ?= $(prefix)/share
@@ -24,11 +25,12 @@ $(EXECUTABLE) : $(OBJECTS)
 
 $(EXECUTABLE).pot : $(EXECUTABLE).cpp
 	@echo 'POT  $@'
-	@xgettext -k_ --c++ -s --no-wrap --omit-header --no-location -o $(EXECUTABLE).pot $(EXECUTABLE).cpp
+	@xgettext -k_ --c++ -s --no-wrap --omit-header --no-location -o $@ $<
 
 ru/$(EXECUTABLE).po : $(EXECUTABLE).pot
 	@echo 'PO   $@'
-	@msgmerge --update ru/$(EXECUTABLE).po $(EXECUTABLE).pot
+	@msgmerge --update $@ $<
+	@touch $@
 
 ru/LC_MESSAGES/$(EXECUTABLE).mo : ru/$(EXECUTABLE).po
 	@echo 'MO   $@'

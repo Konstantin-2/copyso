@@ -2,6 +2,7 @@
 #include <fstream>
 #include <sstream>
 #include <string>
+#include <vector>
 #include <set>
 #include <filesystem>
 #include <cstring>
@@ -149,6 +150,10 @@ static void get_so_directories()
 {
 	set<string> tmp;
 	get_src_content(tmp, srclib / "etc/ld.so.conf");
+	tmp.insert("/lib");
+	tmp.insert("/lib64");
+	tmp.insert("/usr/lib");
+	tmp.insert("/usr/lib64");
 	so_path.reserve(tmp.size());
 	while (!tmp.empty())
 		so_path.emplace_back(move(tmp.extract(tmp.begin()).value()));
