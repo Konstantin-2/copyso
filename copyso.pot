@@ -7,19 +7,16 @@ msgstr ""
 msgid " skipped, file type unknown"
 msgstr ""
 
+msgid "Can not copy "
+msgstr ""
+
 msgid "Can not create directory "
 msgstr ""
 
 msgid "Can not create symbolic link "
 msgstr ""
 
-msgid "Can't copy "
-msgstr ""
-
-msgid "Can't create directory "
-msgstr ""
-
-msgid "Can't make hard link for file "
+msgid "Can not make hard link for file "
 msgstr ""
 
 msgid "Can't open file "
@@ -35,10 +32,16 @@ msgstr ""
 msgid "Deep recursion in ld.so.conf"
 msgstr ""
 
+msgid "Destination directory is not specified"
+msgstr ""
+
 msgid "Destination directory: "
 msgstr ""
 
 msgid "Directories with so-files:"
+msgstr ""
+
+msgid "Error processing file while copying directory: "
 msgstr ""
 
 msgid "Error read "
@@ -54,10 +57,6 @@ msgid "Skipped directory "
 msgstr ""
 
 msgid "Source directory: "
-msgstr ""
-
-#, c-format
-msgid "Unrecognized option %s"
 msgstr ""
 
 msgid ""
@@ -80,7 +79,7 @@ msgid ""
 msgstr ""
 
 msgid ""
-"copyso 0.1\n"
+"copyso 0.2\n"
 "Copyright (C) 2019 Oshepkov Kosntantin\n"
 "License GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>\n"
 "This is free software: you are free to change and redistribute it.\n"

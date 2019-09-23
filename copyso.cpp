@@ -43,7 +43,7 @@ static constexpr std::string_view operator "" _s (const char* str, const size_t 
 
 static void show_version()
 {
-	cout << _("copyso 0.1\nCopyright (C) 2019 Oshepkov Kosntantin\n"
+	cout << _("copyso 0.2\nCopyright (C) 2019 Oshepkov Kosntantin\n"
 	"License GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>\n"
 	"This is free software: you are free to change and redistribute it.\n"
 	"There is NO WARRANTY, to the extent permitted by law.\n");
@@ -90,7 +90,7 @@ static string alt_relative(const fs::path& path, const fs::path& dir)
 	string_view res = path_s;
 	if (!inbegin_shift(res, dir_s))
 		return string();
-	if(!res.empty() && res[0] == '/')
+	while(!res.empty() && res[0] == '/')
 		res.remove_prefix(1);
 	return string(res);
 }
@@ -172,14 +172,13 @@ static vector<string_view> split_path(string_view strv)
 	size_t first = 0;
 	while (first < strv.size())
 	{
-		const auto second = strv.find_first_of(':', first);
-		if (first != second) {
-			if (strv[first] == '/')
-				first++;
-			output.emplace_back(strv.substr(first, second-first));
-		}
+		auto second = strv.find_first_of(':', first);
 		if (second == string_view::npos)
-			break;
+			second = strv.size();
+		while (first < second && strv[first] == '/')
+			first++;
+		if (first < second)
+			output.emplace_back(strv.substr(first, second-first));
 		first = second + 1;
 	}
 	return output;
@@ -198,10 +197,10 @@ static vector<string_view> parse_args(int argc, char ** argv)
 		{"verbose", no_argument, 0, 'v'},
 		{"link", no_argument, 0, 'l'},
 		{"path", no_argument, 0, 'p'},
-		{"srclib", required_argument, 0, 2},
-		{"dstlib", required_argument, 0, 3},
-		{"help", no_argument, 0, 0},
-		{"version", no_argument, 0, 0},
+		{"help", no_argument, 0, 2},
+		{"version", no_argument, 0, 3},
+		{"srclib", required_argument, 0, 4},
+		{"dstlib", required_argument, 0, 5},
 		{0, no_argument, 0, 0}
 	};
 	int longIndex = 0;
@@ -221,24 +220,27 @@ static vector<string_view> parse_args(int argc, char ** argv)
 			srcdir_s = optarg;
 			break;
 		case 2:
-			srclib_s = optarg;
+			show_help();
 			break;
 		case 3:
+			show_version();
+			break;
+		case 4:
+			srclib_s = optarg;
+			break;
+		case 5:
 			dstlib_s = optarg;
 			break;
-		case 0:
-			if (!strcmp(optarg, "--help"))
-				show_help();
-			else if (!strcmp(optarg, "--version"))
-				show_version();
-			else
-				error(1, 0, _("Unrecognized option %s"), optarg);
 		default:
-			res.emplace_back(optarg);
+			if (optarg)
+				res.emplace_back(optarg);
 		}
 	}
-	if (res.size() < 2) {
+	if (res.empty()) {
 		cout << _("Files to copy are not specified") << '\n';
+		exit(0);
+	} else if (res.size() == 1) {
+		cout << _("Destination directory is not specified") << '\n';
 		exit(0);
 	}
 	srcdir = srcdir_s ? srcdir_s : "/";
@@ -277,6 +279,8 @@ string find_so(string_view name)
 			string res(s);
 			res += '/';
 			res += name;
+			while (!res.empty() && res[0] == '/')
+				res.erase(0, 1);
 			return res;
 		}
 	return string();
@@ -299,20 +303,20 @@ static void copy_regular_file(const fs::path& abs_src, const fs::path& abs_dst)
 
 	fs::create_directories(abs_dst.parent_path(), ec);
 	if (ec && ec != errc::file_exists) {
-		cerr << _("Can't create directory ") << abs_dst.parent_path() << ": " << strerror(errno) << '\n';
+		cerr << _("Can not create directory ") << abs_dst.parent_path() << ": " << strerror(errno) << '\n';
 	}
 
 	if (try_link) {
 		static bool errflag = false;
 		fs::create_hard_link(abs_src, abs_dst, ec);
 		if (ec && ec != errc::file_exists && !errflag) {
-			cerr << _("Can't make hard link for file ") << abs_src << ": " << strerror(errno) << '\n';
+			cerr << _("Can not make hard link for file ") << abs_src << ": " << strerror(errno) << '\n';
 			errflag = true;
 		}
 	}
 	fs::copy_file(abs_src, abs_dst, ec);
 	if (ec && ec != errc::file_exists)
-			cerr << _("Can't copy ") << abs_src << " to " << abs_dst << ": " << strerror(errno) << '\n';
+			cerr << _("Can not copy ") << abs_src << " to " << abs_dst << ": " << strerror(errno) << '\n';
 }
 
 static void copy_bin_deps(fs::path abs_path)
@@ -430,15 +434,19 @@ static void copy_dir(fs::path src)
 {
 	for(auto& p: fs::directory_iterator(src)) {
 		fs::path path = alt_relative(p, srcdir);
+		if (path.empty()) {
+			cerr << _("Error processing file while copying directory: ") << p << endl;
+			continue;
+		}
 		copy_item(path);
 	}
 }
 
 void copy_param(string_view item)
 {
-	if (item.empty()) return;
-	if (item[0] == '/')
+	while (!item.empty() && item[0] == '/')
 		item.remove_prefix(1);
+	if (item.empty()) return;
 	fs::path src = srcdir / item;
 	if (fs::is_directory(src)) {
 		copy_dir(src);

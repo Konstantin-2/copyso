@@ -5,7 +5,7 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: copyso 0.1\n"
+"Project-Id-Version: copyso 0.2\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2019-05-01 00:26+0500\n"
 "PO-Revision-Date: 2019-05-01 00:26+0500\n"
@@ -27,19 +27,16 @@ msgstr " пропущен, файл не найден"
 msgid " skipped, file type unknown"
 msgstr " пропущен, неизвестный тип файла"
 
+msgid "Can not copy "
+msgstr "Ошибка копирования "
+
 msgid "Can not create directory "
 msgstr "Не могу создать каталог "
 
 msgid "Can not create symbolic link "
 msgstr "Не могу создать символьную ссылку "
 
-msgid "Can't copy "
-msgstr "Ошибка копирования "
-
-msgid "Can't create directory "
-msgstr "Ошибка создания каталога "
-
-msgid "Can't make hard link for file "
+msgid "Can not make hard link for file "
 msgstr "Ошибка создания жесткой ссылки на файл "
 
 msgid "Can't open file "
@@ -55,11 +52,17 @@ msgstr "Копирование "
 msgid "Deep recursion in ld.so.conf"
 msgstr "Длинная рекурсия в ld.so.conf"
 
+msgid "Destination directory is not specified"
+msgstr "Не указан Целевой каталог"
+
 msgid "Destination directory: "
 msgstr "Целевой каталог "
 
 msgid "Directories with so-files:"
 msgstr "Каталоги с so-файлами:"
+
+msgid "Error processing file while copying directory: "
+msgstr "Ошибка обработки файла при копировании каталога: "
 
 msgid "Error read "
 msgstr "Ошибка чтения "
@@ -75,10 +78,6 @@ msgstr "Пропущен каталог "
 
 msgid "Source directory: "
 msgstr "Исходный каталог: "
-
-#, c-format
-msgid "Unrecognized option %s"
-msgstr "Нераспознанная опция %s"
 
 msgid ""
 "Usage: copyso [OPTION] <source> ... <dest>\n"
@@ -118,14 +117,14 @@ msgstr ""
 "General help using GNU software: <https://www.gnu.org/gethelp/>\n"
 
 msgid ""
-"copyso 0.1\n"
+"copyso 0.2\n"
 "Copyright (C) 2019 Oshepkov Kosntantin\n"
 "License GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl."
 "html>\n"
 "This is free software: you are free to change and redistribute it.\n"
 "There is NO WARRANTY, to the extent permitted by law.\n"
 msgstr ""
-"copyso 0.1\n"
+"copyso 0.2\n"
 "Copyright (C) 2019 Oshepkov Kosntantin \n"
 "License GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl."
 "html>\n"
