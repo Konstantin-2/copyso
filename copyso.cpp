@@ -17,6 +17,7 @@
 #include <getopt.h>
 #include <glob.h>
 #include <error.h>
+#include <sys/wait.h>
 #define _(STRING) gettext(STRING)
 
 using namespace std;
@@ -43,7 +44,7 @@ static constexpr std::string_view operator "" _s (const char* str, const size_t 
 
 static void show_version()
 {
-	cout << _("copyso 0.2\nCopyright (C) 2019 Oshepkov Kosntantin\n"
+	cout << _("copyso 0.3\nCopyright (C) 2019-2020 Oshepkov Kosntantin\n"
 	"License GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>\n"
 	"This is free software: you are free to change and redistribute it.\n"
 	"There is NO WARRANTY, to the extent permitted by law.\n");
@@ -355,6 +356,8 @@ static void copy_bin_deps(fs::path abs_path)
 		else
 			cout << so_name << _(" not found. Please, append required directory to /etc/ld.so.conf") << '\n';
 	}
+	int status;
+	waitpid(pid, &status, 0);
 }
 
 /* Copy if src is symlink to absolute path \
