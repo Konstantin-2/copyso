@@ -1,2 +1,2 @@
-Copy executable files and their dependencies
-Useful when create own Linux Live CD
+Copy executable files and their dependencies (so-files).
+Useful when create custom Linux Live CD.

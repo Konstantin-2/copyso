@@ -1,3 +1,6 @@
+msgid " already copied"
+msgstr ""
+
 msgid " not found. Please, append required directory to /etc/ld.so.conf"
 msgstr ""
 
@@ -50,6 +53,9 @@ msgstr ""
 msgid "Files to copy are not specified"
 msgstr ""
 
+msgid "Files to copy:"
+msgstr ""
+
 msgid "Read error "
 msgstr ""
 
@@ -71,6 +77,8 @@ msgid ""
 "  -l, --link        try to make hard links instead of copy files\n"
 "  -p, --path        use environment PATH to search files in root\n"
 "  -v, --verbose     explain what is being done\n"
+"      --x86         copy 32-bit libs\n"
+"      --x64         copy 64-bit libs\n"
 "      --help        display this help and exit\n"
 "      --version     output version information and exit\n"
 "Report bugs to: oks-mgn@mail.ru\n"
@@ -80,7 +88,7 @@ msgstr ""
 
 msgid ""
 "copyso 0.3\n"
-"Copyright (C) 2019-2020 Oshepkov Kosntantin\n"
+"Copyright (C) 2019-2022 Oshepkov Kosntantin\n"
 "License GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>\n"
 "This is free software: you are free to change and redistribute it.\n"
 "There is NO WARRANTY, to the extent permitted by law.\n"

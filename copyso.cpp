@@ -33,9 +33,12 @@ set<string> list_so; // copied so-files (filenames only)
 bool try_link = false; // Should program try to make hard link instead of copy files
 bool verbose = false;
 vector<string_view> paths; // Path to search files (see environment PATH)
+enum class Arch {x86, x64, unknown};
+Arch need_arch = Arch::unknown;
 
 static void copy_absurl(fs::path src, fs::path dst);
 static void copy_item(fs::path rel, bool = false);
+static Arch get_arch(const string& fn);
 
 static constexpr std::string_view operator "" _s (const char* str, const size_t size)
 {
@@ -44,7 +47,7 @@ static constexpr std::string_view operator "" _s (const char* str, const size_t 
 
 static void show_version()
 {
-	cout << _("copyso 0.3\nCopyright (C) 2019-2020 Oshepkov Kosntantin\n"
+	cout << _("copyso 0.3\nCopyright (C) 2019-2022 Oshepkov Kosntantin\n"
 	"License GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>\n"
 	"This is free software: you are free to change and redistribute it.\n"
 	"There is NO WARRANTY, to the extent permitted by law.\n");
@@ -63,6 +66,8 @@ static void show_help()
 			"  -l, --link        try to make hard links instead of copy files\n"
 			"  -p, --path        use environment PATH to search files in root\n"
 			"  -v, --verbose     explain what is being done\n"
+			"      --x86         copy 32-bit libs\n"
+			"      --x64         copy 64-bit libs\n"
 			"      --help        display this help and exit\n"
 			"      --version     output version information and exit\n"
 			"Report bugs to: oks-mgn@mail.ru\n"
@@ -121,7 +126,6 @@ static void get_src_content(set<string>& res, const string& filename, int reqlev
 		while (i2 > i1 && isspace(line[i2 - 1])) i2--;
 		string_view sub(line.data() + i1, i2 - i1);
 		if (sub[0] == '/') {
-			while (!sub.empty() && sub[0] == '/') sub.remove_prefix(1);
 			while (!sub.empty() && sub.back() == '/') sub.remove_suffix(1);
 			if (fs::is_directory(srclib / sub))
 				res.emplace(sub);
@@ -202,6 +206,8 @@ static vector<string_view> parse_args(int argc, char ** argv)
 		{"version", no_argument, 0, 3},
 		{"srclib", required_argument, 0, 4},
 		{"dstlib", required_argument, 0, 5},
+		{"x86", no_argument, 0, 6},
+		{"x64", no_argument, 0, 7},
 		{0, no_argument, 0, 0}
 	};
 	int longIndex = 0;
@@ -232,6 +238,12 @@ static vector<string_view> parse_args(int argc, char ** argv)
 		case 5:
 			dstlib_s = optarg;
 			break;
+		case 6:
+			need_arch = Arch::x86;
+			break;
+		case 7:
+			need_arch = Arch::x64;
+			break;
 		default:
 			if (optarg)
 				res.emplace_back(optarg);
@@ -249,9 +261,14 @@ static vector<string_view> parse_args(int argc, char ** argv)
 	srclib = srclib_s ? srclib_s : srcdir;
 	if (dstlib_s) dstlib = dstlib_s, has_dstlib = true;
 	res.pop_back();
-	if (verbose)
+	if (verbose) {
 		cout << _("Source directory: ") << srcdir << '\n'
-			<< _("Destination directory: ") << dstdir << '\n';
+			<< _("Destination directory: ") << dstdir << '\n'
+			<< _("Files to copy:");
+		for (const string_view sv: res)
+			cout << ' '<< sv;
+		cout << '\n';
+	}
 
 	if (use_path) {
 		char * env = getenv("PATH");
@@ -282,7 +299,10 @@ string find_so(string_view name)
 			res += name;
 			while (!res.empty() && res[0] == '/')
 				res.erase(0, 1);
-			return res;
+			if (need_arch == Arch::unknown)
+				return res;
+			if (need_arch == get_arch(res))
+				return res;
 		}
 	return string();
 }
@@ -349,7 +369,11 @@ static void copy_bin_deps(fs::path abs_path)
 		while (!so_name.empty() && isspace(so_name.back())) so_name.remove_suffix(1);
 		if (so_name.empty()) continue;
 		string so_name_str(so_name);
-		if(!list_so.insert(so_name_str).second) continue;
+		if(!list_so.insert(so_name_str).second) {
+			if (verbose)
+				cout << so_name_str << _(" already copied") << '\n';
+			continue;
+		}
 		string so_fullname = find_so(so_name);
 		if (!so_fullname.empty())
 			copy_item(so_fullname, true);
@@ -463,6 +487,50 @@ void copy_param(string_view item)
 		}
 	}
 	cout << src << _(" skipped, file not found") << '\n';
+}
+
+Arch get_arch(const string& fn)
+{
+	int pfd[2];
+	if (pipe(pfd)) error(1, errno, "pipe error");
+	pid_t pid = fork();
+	if (pid == -1) error(1, errno, "fork error");
+
+	if (!pid) {
+		if (dup2(pfd[1], STDOUT_FILENO) == -1) error(1, errno, "dup2() error");
+		close(pfd[1]);
+		close(pfd[0]);
+		ostringstream ofn;
+		ofn << '/' << fn;
+		string s = ofn.str();
+
+		char * args[4] = {(char *)"objdump", (char *)"-a", (char *)s.c_str(), NULL};
+		execvp(args[0], args);
+		error(1, errno, _("Can't run %s"), args[0]);
+	}
+	close(pfd[1]);
+
+	__gnu_cxx::stdio_filebuf<char> buf(pfd[0], std::ios::in);
+	istream is(&buf);
+	string line;
+	Arch res = Arch::unknown;
+	while(getline(is, line)) {
+		if (line.find("elf32-i386") != string::npos)
+			res = Arch::x86;
+		if (line.find("elf64-x86-64") != string::npos)
+			res = Arch::x64;
+	}
+	if (verbose) {
+		cout << "Arch " << fn;
+		switch(res) {
+		case Arch::x64: cout << " x64" << '\n'; break;
+		case Arch::x86: cout << " x86" << '\n'; break;
+		default: cout << " unknown" << '\n'; break;
+		};
+	}
+	int status;
+	waitpid(pid, &status, 0);
+	return res;
 }
 
 int main(int argc, char ** argv)

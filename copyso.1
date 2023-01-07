@@ -1,6 +1,6 @@
 .\" Manpage for copyso.
 .\" Contact oks-mgn@mail.ru to correct errors or typos.
-.TH COPYSO 1 "16 February 2020" "0.3" "copyso man page"
+.TH COPYSO 1 "25 November 2022" "0.3" "copyso man page"
 .SH NAME
 copyso \- copy binary executables and their dependencies
 .SH SYNOPSIS
@@ -49,6 +49,12 @@ explain what is being done.
 Print some additional info.
 For example, if You copy \fIa\fR and \fIb\fR, module \fIa\fR depends on \fIb\fR, program informs You that it is enough to ask copy only \fIa\fR.
 Module \fIb\fR will be auto copied as dependency.
+.TP
+\fB--x86\fR
+copy 32-bit libs.
+.TP
+\fB--x64\fR
+copy 64-bit libs.
 .TP
 \fB--help\fR
 display help and exit.
